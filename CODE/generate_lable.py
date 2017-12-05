@@ -1,7 +1,7 @@
 from scipy import signal
 import numpy as np
 import csv
-
+import matplotlib.pyplot as plt
 import json
 import re
 import tensorflow as tf
@@ -27,21 +27,25 @@ CAP = 'leg_Capacitor_'
 ACC = 'leg_Acc_'
 
 TAG_PATH = DIR + PATIENT + RIGHT_FOOT + SAVED_TAG_JSON
-# DATA_PATH = [DIR + PATIENT + RIGHT_FOOT + CAP + '1' + '.csv',
-#              DIR + PATIENT + RIGHT_FOOT + CAP + '2' + '.csv',
-#              DIR + PATIENT + RIGHT_FOOT + CAP + '3' + '.csv']
+
+# DATA_PATH = [DIR + PATIENT + RIGHT_FOOT + CAP + '1' + '.csv']
+
 DATA_PATH = [DIR + PATIENT + RIGHT_FOOT + CAP + '1' + '.csv',
              DIR + PATIENT + RIGHT_FOOT + CAP + '2' + '.csv',
-             DIR + PATIENT + RIGHT_FOOT + CAP + '3' + '.csv',
-             DIR + PATIENT + LEFT_FOOT + CAP + '1' + '.csv',
-             DIR + PATIENT + LEFT_FOOT + CAP + '2' + '.csv',
-             DIR + PATIENT + LEFT_FOOT + CAP + '3' + '.csv',
-             DIR + PATIENT + RIGHT_FOOT + ACC + 'X' + '.csv',
-             DIR + PATIENT + RIGHT_FOOT + ACC + 'Y' + '.csv',
-             DIR + PATIENT + RIGHT_FOOT + ACC + 'Z' + '.csv',
-             DIR + PATIENT + LEFT_FOOT + ACC + 'X' + '.csv',
-             DIR + PATIENT + LEFT_FOOT + ACC + 'Y' + '.csv',
-             DIR + PATIENT + LEFT_FOOT + ACC + 'Z' + '.csv']
+             DIR + PATIENT + RIGHT_FOOT + CAP + '3' + '.csv']
+
+# DATA_PATH = [DIR + PATIENT + RIGHT_FOOT + CAP + '1' + '.csv',
+#              DIR + PATIENT + RIGHT_FOOT + CAP + '2' + '.csv',
+#              DIR + PATIENT + RIGHT_FOOT + CAP + '3' + '.csv',
+#              DIR + PATIENT + LEFT_FOOT + CAP + '1' + '.csv',
+#              DIR + PATIENT + LEFT_FOOT + CAP + '2' + '.csv',
+#              DIR + PATIENT + LEFT_FOOT + CAP + '3' + '.csv',
+#              DIR + PATIENT + RIGHT_FOOT + ACC + 'X' + '.csv',
+#              DIR + PATIENT + RIGHT_FOOT + ACC + 'Y' + '.csv',
+#              DIR + PATIENT + RIGHT_FOOT + ACC + 'Z' + '.csv',
+#              DIR + PATIENT + LEFT_FOOT + ACC + 'X' + '.csv',
+#              DIR + PATIENT + LEFT_FOOT + ACC + 'Y' + '.csv',
+#              DIR + PATIENT + LEFT_FOOT + ACC + 'Z' + '.csv']
 
 
 # read tags' json file
@@ -55,10 +59,10 @@ for i in tag_times:
 
 # temp dataset to store the band's csv data
 # spectrogram size = 11 * 9
-CAP_data = np.zeros(shape=(12000, 11, 9))
+CAP_data = np.zeros(shape=(2000, 9, 15))
 # ACC_data = np.zeros(shape=(6000, 11, 9))
 # Gyro_data = np.zeros(shape=(6000, 11, 9))
-CNN_label = np.zeros(shape=(12000, 1), dtype=object)
+CNN_label = np.zeros(shape=(2000, 1), dtype=object)
 cap_counter = 0 #counter for counting how many spectrograms have been generate
 acc_counter = 0
 gyro_counter = 0
@@ -103,23 +107,19 @@ for file_num in range(len(DATA_PATH)):
                 elif stop + 1 < float(row[0]):
                     # print('stop:' + str(idx))
                     STOP = idx
-                    spec_num = int((STOP - START) / 100)
+                    spec_num = int((STOP - START) / 150)
                     # draw spectrogram
                     if spec_num < 1 :
                         graphic_array = sensor_data_array_row1[START: STOP]
-                        f, t, Sxx = signal.spectrogram(graphic_array, fs=50, nperseg=20)
-                        if file_num < 6:
-                            CAP_data[cap_counter] = Sxx
-                            CNN_label[cap_counter] = comment
-                            cap_counter += 1
-                        elif file_num >= 6:
-                            ACC_data[cap_counter] = Sxx
-                            acc_counter += 1
+                        f, t, Sxx = signal.spectrogram(graphic_array, fs=50, nperseg=16, noverlap=10)
+                        CAP_data[cap_counter] = Sxx
+                        CNN_label[cap_counter] = comment
+                        cap_counter += 1
                         # fig = plt.pcolormesh(t, f, Sxx)
                         # plt.colorbar(fig)
                         # plt.ylabel('Frequency [Hz]')
                         # plt.xlabel('Time [sec]')
-                        # save_path = '/Users/zhengli/Desktop/Projects/MS-thesis/Lab_Patient_Data/PED2V1_2017_03_13/CNN_spectrogram/'+ comment + str(counter) + '.png'
+                        # save_path = '/Users/zhengli/Desktop/Projects/MS-thesis/Lab_Patient_Data/PED2V1_2017_03_13/CNN_spectrogram/Right/Capacitor_1/'+ comment + str(cap_counter) + '.png'
                         # plt.savefig(save_path)
                         # plt.clf()
                     else:
@@ -127,23 +127,20 @@ for file_num in range(len(DATA_PATH)):
                         num = 0
                         while num < spec_num:
                             graphic_sub_array = graphic_array[(num*100): (num*100+100)]
-                            f, t, Sxx = signal.spectrogram(graphic_sub_array, fs=50, nperseg=20, noverlap=10)
+                            f, t, Sxx = signal.spectrogram(graphic_sub_array, fs=50, nperseg=16, noverlap=10)
                             # if file_num < 6:
                             CAP_data[cap_counter] = Sxx
                             CNN_label[cap_counter] = comment
                             cap_counter += 1
                             print(cap_counter)
-                            # elif file_num >= 6:
-                            #     ACC_data[cap_counter] = Sxx
-                            #     acc_counter += 1
-                            # print(Sxx)
+                            # print(Sxx.shape)
                             # fig = plt.pcolormesh(t, f, Sxx)
                             # plt.colorbar(fig)
                             # plt.ylabel('Frequency [Hz]')
                             # plt.xlabel('Time [sec]')
                             # plt.title(comment)
-                            # save_path = '/Users/zhengli/Desktop/Projects/MS-thesis/Lab_Patient_Data/PED2V1_2017_03_13/CNN_spectrogram/Right/Capacitor_3/' + comment + str(counter) + '_' + str(num) + '.png'
-                            # print(save_path)
+                            # save_path = '/Users/zhengli/Desktop/Projects/MS-thesis/Lab_Patient_Data/PED2V1_2017_03_13/CNN_spectrogram/Right/Capacitor_1/' + comment + str(cap_counter) + '_' + str(num) + '.png'
+                            # # print(save_path)
                             # plt.savefig(save_path)
                             # plt.clf()
                             num += 1
@@ -151,18 +148,18 @@ for file_num in range(len(DATA_PATH)):
 
 
 # remove all 0 rows of the data set
-mask = ~(CAP_data == 0).all(axis=(1,2))
+mask = ~(CAP_data == 0).all(axis=(1, 2))
 CAP_data = CAP_data[mask]
-CNN_data = np.reshape(CAP_data, (995, 12, 11, 9), order='F')
+CNN_data = np.reshape(CAP_data, (614, 3, 9, 15), order='F')
 
 #remove all 0 rows of the label set
 mask = ~(CNN_label == 0).all(axis = (1))
 CNN_label = CNN_label[mask]
-CNN_label = np.delete(CNN_label, np.arange(995, 12000), axis=0)
+CNN_label = np.delete(CNN_label, np.arange(614, 2000), axis=0)
 
 #
-input_data = np.zeros(shape=(995,12,11,9))
-input_label = np.zeros(shape=(995,1),dtype=object)
+input_data = np.zeros(shape=(614, 3, 9, 15))
+input_label = np.zeros(shape=(614, 1),dtype=object)
 data_counter = 0
 
 #find out the 3 type of data that we need: complex, foot jolt and toes wiggling
@@ -180,7 +177,7 @@ final_data = input_data[mask]
 mask = ~(input_label == 0).all(axis = (1))
 final_label = input_label[mask]
 
-convertedLabel = np.zeros(shape=(903, 1))
+convertedLabel = np.zeros(shape=(556, 1))
 for idx in range(len(final_label)):
     if np.array_equal(final_label[idx], ['complex']):
         convertedLabel[idx] = 0
@@ -212,9 +209,9 @@ num_classes = 3
 epochs = 100
 
 # input dimensions
-num_chans = 12
-num_frequence = 11
-num_timeSmps = 9
+num_chans = 3
+num_frequence = 9
+num_timeSmps = 15
 
 # convert class vectors to binary class matrices
 train_label = keras.utils.to_categorical(train_label, num_classes)
